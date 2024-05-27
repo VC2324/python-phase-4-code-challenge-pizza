@@ -24,6 +24,51 @@ api = Api(app)
 def index():
     return "<h1>Code challenge</h1>"
 
+@app.get("/restaurants")
+def get_restaurants():
+    return [res.to_dict() for res in Restaurant.query.all()], 200
 
+@app.get("/restaurants/<int:id>")
+def get_by_id(id):
+    res = Restaurant.query.where(Restaurant.id == id).first()
+    if res:
+        return res.to_dict(rules =("restaurant_pizzas",)), 200
+    else:
+        return { "error": 'Restaurant not found' }, 404
+
+@app.delete("/restaurants/<int:id>")
+def delete_res(id:int):
+    res_to_delete = Restaurant.query.where(Restaurant.id ==id).first()
+    if res_to_delete:
+        db.session.delete(res_to_delete)
+        db.session.commit()
+        return {}, 204
+    else:
+        return {'error': 'Restaurant not found'}, 404
+    
+    # feel this above is correct
+
+@app.get('/pizzas')
+def get_pizzas():
+    return [pizza.to_dict() for pizza in Pizza.query.all()], 200
+
+@app.post('/restaurant_pizzas')
+def post_res_pizza():
+    try:
+        new_res_pizza = RestaurantPizza( 
+            price = request.json.get("price"),
+            pizza_id =request.json.get("pizza_id"),
+            restaurant_id = request.json.get("restaurant_id"),
+           
+            
+        )
+        if new_res_pizza:
+            db.session.add(new_res_pizza)
+            db.session.commit()
+
+            return new_res_pizza.to_dict(), 201
+    
+    except ValueError as error:
+        return {'errors': ["validation errors"]}, 400
 if __name__ == "__main__":
     app.run(port=5555, debug=True)
